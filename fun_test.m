@@ -4,13 +4,14 @@
 %声源高度1.27
 %此程序为远场
 clear;close all;clc
-load('D:\Programming\Matlab\Microphone Array\E36.mat')
+load('D:\Programming\Matlab\MicrophoneArray\E36.mat')
 %全局变量声明
 global C N M FMAIN Array_X Array_Y
 C=340;%sound speed
 % $c=\sqrt(1.4*287.06*T)$T为开尔文热力学温度，单位为K
 L=0.82159;%阵列孔径，之后再实际测量一下
 r=5.6;%声源距麦克风阵列的距离
+Alogrithm=1;%1:Beamforming 2:MUSIC
 %%
 
 Fs=44100;%采样频率
@@ -93,7 +94,7 @@ title('理论延时与实际延时误差','FontName','黑体')
 %% 声源定位算法
 % DESCRIPTIVE TEXT
 
-P=DOAalogrithm(X,2);%定位算法
+P=DOAalogrithm(X,Alogrithm);%定位算法
 
 
 [azi_max,ele_max]=find(P==max(P(:)));
