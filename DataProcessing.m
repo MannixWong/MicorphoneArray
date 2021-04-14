@@ -1,7 +1,7 @@
 
 clear;close all;clc
-M=36
-filen='C:\Users\MannixWong\Desktop\data\20210412_16_57_12.dat';
+M=36;
+filen='C:\Users\MannixWong\Desktop\data\20210414_11_14_15.dat';
 height=1000000;
 fid=fopen(filen,'r');%读出
 img=fread(fid,[M,height],'uint16');%将数据读到1*40000的数组中，指定源数据为uint16类
