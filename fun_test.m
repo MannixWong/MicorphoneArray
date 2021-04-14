@@ -1,6 +1,6 @@
 %波束形成实际测试程序
 %16阵元与36阵元切换只需替换数据文件即可(E16/E36)
-%阵列中心高度1.2845m
+%阵列中心高度1.287m
 %声源高度1.27
 %此程序为远场
 clear;close all;clc
@@ -10,14 +10,15 @@ global C N M FMAIN Array_X Array_Y
 C=340;%sound speed
 % $c=\sqrt(1.4*287.06*T)$T为开尔文热力学温度，单位为K
 L=0.82159;%阵列孔径，之后再实际测量一下
-r=5.6;%声源距麦克风阵列的距离
-Alogrithm=1;%1:Beamforming 2:MUSIC
+Alogrithm=3;%1:Beamforming 2:MUSIC
 %%
 
 Fs=44100;%采样频率
 N=length(X(1,:));%快拍数
 M=length(X(:,1));%阵元数
 disp(['阵元数为: ',num2str(M)])
+ArrayPosition=[0 0 0];%这个不改
+SpeakerPosition=[1.73 -0.017 3];%x为横向距离0，-1.73，-3;y为扬声器中心高度减阵列中心高度;z为纵向距离3,5
 Array_X=[0.000 -2.468 -1.510 1.535 2.458 -0.015 -12.985 -1.276 12.196 8.814 ...%the first column of excel,unit:meter!!!
     -6.749 -22.675 -8.026 17.714 18.974 -5.987 -21.711 -25.279 6.088 ...
     29.042 11.861 -12.662 -34.434 -8.619 29.107 26.609 -0.842 -37.427 ...
@@ -66,18 +67,20 @@ title('信号频率','FontName','黑体')
 FMAIN=ff(maxFindex);%信号主频
 lambda=C/FMAIN;%波长
 disp(['信号的主频为: ',num2str(FMAIN),'Hz'])
-if r<=2*L^2/lambda
+
+%% 理论延时计算
+% DESCRIPTIVE TEXT
+
+r2central=sqrt(sum((SpeakerPosition-ArrayPosition).^2));%声源距阵列中心距离
+ele_d=asind(SpeakerPosition(3)/r2central);%理论俯仰角，与XOY平面夹角
+azi_d=atand(SpeakerPosition(2)/SpeakerPosition(1));%理论方位角，与X轴夹角
+disp(['声源距阵列中心距离为: ',num2str(r2central),'m'])
+if r2central<=2*L^2/lambda
     disp('近场')
 else
     disp('远场')
 end
-%% 理论延时计算
-% DESCRIPTIVE TEXT
-ArrayPosition=[0 0 0];
-SpeakerPosition=[2.5 -0.0145 3];%y为阵列中心高度减扬声器中心高度
-r2central=sqrt(sum((SpeakerPosition-ArrayPosition).^2));%声源距阵列中心距离
-ele_d=asind(SpeakerPosition(3)/r2central);%理论俯仰角，与XOY平面夹角
-azi_d=atand(SpeakerPosition(2)/SpeakerPosition(1));%理论方位角，与X轴夹角
+disp(['理论方位角: ',num2str(azi_d),'°','理论俯仰角: ',num2str(ele_d),'°'])
 for m=1:M
     tau(m)=1/C*(Array_X(m)*cosd(azi_d)*cosd(ele_d)+Array_Y(m)*sind(azi_d)*cosd(ele_d));%求理论延时
 end
@@ -91,6 +94,7 @@ set(gca,'YTickLabel',y_str);    %显示
 xlim([1 M])
 xlabel('阵元序号','FontName','宋体');ylabel('延时误差','FontName','宋体');
 title('理论延时与实际延时误差','FontName','黑体')
+
 %% 声源定位算法
 % DESCRIPTIVE TEXT
 
