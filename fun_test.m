@@ -1,7 +1,7 @@
 %波束形成实际测试程序
 %16阵元与36阵元切换只需替换数据文件即可(E16/E36)
 %阵列中心高度1.287m
-%声源高度1.27
+%声源高度1
 %此程序为远场
 clear;close all;clc
 load('D:\Programming\Matlab\MicrophoneArray\E36.mat')
@@ -10,7 +10,7 @@ global C N M FMAIN Array_X Array_Y
 C=340;%sound speed
 % $c=\sqrt(1.4*287.06*T)$T为开尔文热力学温度，单位为K
 L=0.82159;%阵列孔径，之后再实际测量一下
-Alogrithm=3;%1:Beamforming 2:MUSIC
+Alogrithm=3;%1:Beamforming 2:MUSIC 3:Functional Beamforming 4:Scanning Plane(CB)
 %%
 
 Fs=44100;%采样频率
@@ -18,7 +18,7 @@ N=length(X(1,:));%快拍数
 M=length(X(:,1));%阵元数
 disp(['阵元数为: ',num2str(M)])
 ArrayPosition=[0 0 0];%这个不改
-SpeakerPosition=[1.73 -0.017 3];%x为横向距离0，-1.73，-3;y为扬声器中心高度减阵列中心高度;z为纵向距离3,5
+SpeakerPosition=[1.39 -0.287 4];%x为横向距离0，1.73，3;y为扬声器中心高度减阵列中心高度;z为纵向距离3,5
 Array_X=[0.000 -2.468 -1.510 1.535 2.458 -0.015 -12.985 -1.276 12.196 8.814 ...%the first column of excel,unit:meter!!!
     -6.749 -22.675 -8.026 17.714 18.974 -5.987 -21.711 -25.279 6.088 ...
     29.042 11.861 -12.662 -34.434 -8.619 29.107 26.609 -0.842 -37.427 ...
@@ -27,35 +27,56 @@ Array_Y=[0.000 -0.786 2.104 2.086 -0.815 -2.590 2.877 13.239 5.305 -9.960 ...
     -11.461 -1.072 21.234 14.133 -12.461 -21.896 -19.526 14.615 28.558 ...
     3.035 -26.682 -32.093 2.125 33.406 18.521 -21.959 -39.090 -11.352 ...
     32.099 31.153 -12.845 -42.018 -22.932 27.845 40.141 -3.037]'*0.01;
+% Array_X=[0.000 -0.786 2.104 2.086 -0.815 -2.590 2.877 13.239 5.305 -9.960 ...%the third column of the excel
+%     -11.461 -1.072 21.234 14.133 -12.461 -21.896 -19.526 14.615 28.558 ...
+%     3.035 -26.682 -32.093 2.125 33.406 18.521 -21.959 -39.090 -11.352 ...
+%     32.099 31.153 -12.845 -42.018 -22.932 27.845 40.141 -3.037]'*-0.01;
+% Array_Y=[0.000 -2.468 -1.510 1.535 2.458 -0.015 -12.985 -1.276 12.196 8.814 ...
+%     -6.749 -22.675 -8.026 17.714 18.974 -5.987 -21.711 -25.279 6.088 ...
+%     29.042 11.861 -12.662 -34.434 -8.619 29.107 26.609 -0.842 -37.427 ...
+%     -22.327 23.628 36.929 10.459 -36.729 -33.159 16.236 43.193]'*-0.01;
+
+Array_Z=zeros(M,1);
+
+% figure
+% for i=1:M
+%     scatter(Array_X(i),Array_Y(i),'r')%2d array figure
+%     hold on
+%     text(Array_X(i),Array_Y(i),num2str(i))
+% end
+% grid on
 
 figure
+scatter3(Array_X,Array_Y,Array_Z,'r')%3d array figure
+hold on
+scatter3(SpeakerPosition(1),SpeakerPosition(2),SpeakerPosition(3),20,'gp')%sound source figure
+hold on
+plot3([SpeakerPosition(1),0],[SpeakerPosition(2),0],[SpeakerPosition(3),0])%connect the sound source point & central point
 for i=1:M
-    scatter(Array_X(i),Array_Y(i),'r')%2d array figure
-    hold on
     text(Array_X(i),Array_Y(i),num2str(i))
 end
-grid on
+
 %% SECTION TITLE
 % DESCRIPTIVE TEXT
 
-figure
-plot(X(1,:));
-hold on
-plot(X(3,:));
-% legend('通道1','通道16')
-grid on
-ax=gca;
-ax.LineWidth=0.5;%设置网格线宽为0.5磅
-ax.XAxis.LineWidth=1;%设置x坐标轴线宽为1磅
-ax.YAxis.LineWidth=1;%设置y坐标轴线宽为1磅
+% figure
+% plot(X(1,:));
+% hold on
+% plot(X(3,:));
+% % legend('通道1','通道16')
+% grid on
+% ax=gca;
+% ax.LineWidth=0.5;%设置网格线宽为0.5磅
+% ax.XAxis.LineWidth=1;%设置x坐标轴线宽为1磅
+% ax.YAxis.LineWidth=1;%设置y坐标轴线宽为1磅
 for i=1:M
     delay(i)=finddelay(X(1,:),X(i,:))/Fs;%这里算的延时单位是s
 end
-[a,b]=xcorr(X(1,:),X(7,:),'coeff');
-figure
-plot(b,a)
+% [a,b]=xcorr(X(1,:),X(7,:),'coeff');
+% figure
+% plot(b,a)
 
-X1=fft(X(1,:));
+X1=fft(X(2,:));
 figure
 ff=(0:N/2-1)*Fs/N;
 F=abs(X1(1:N/2));
@@ -72,8 +93,12 @@ disp(['信号的主频为: ',num2str(FMAIN),'Hz'])
 % DESCRIPTIVE TEXT
 
 r2central=sqrt(sum((SpeakerPosition-ArrayPosition).^2));%声源距阵列中心距离
+
 ele_d=asind(SpeakerPosition(3)/r2central);%理论俯仰角，与XOY平面夹角
-azi_d=atand(SpeakerPosition(2)/SpeakerPosition(1));%理论方位角，与X轴夹角
+azi_d=atan2d(SpeakerPosition(2),SpeakerPosition(1));%理论方位角，与X轴夹角
+uu=find(azi_d(:)<0);
+azi_d(uu)=360+azi_d(uu);
+
 disp(['声源距阵列中心距离为: ',num2str(r2central),'m'])
 if r2central<=2*L^2/lambda
     disp('近场')
@@ -102,18 +127,23 @@ P=DOAalogrithm(X,Alogrithm);%定位算法
 
 
 [azi_max,ele_max]=find(P==max(P(:)));
-disp(['预测方位角: ',num2str(azi_max),'°','预测俯仰角: ',num2str(ele_max),'°'])
+disp(['预测方位角1: ',num2str(azi_max(1)),'°','预测俯仰角1: ',num2str(ele_max(1)),'°'])
+% disp(['预测方位角2: ',num2str(azi_max(2)),'°','预测俯仰角2: ',num2str(ele_max(2)),'°'])
 % P_CB=20*log10(P_CB/max(P_CB(:)));
 figure
 h=pcolor(P);%等高线图
-xlabel('俯仰角/(\circ)','FontName','宋体');ylabel('方位角/(\circ)','FontName','宋体')
+if Alogrithm==4
+     xlabel('x/(m)','FontName','宋体');ylabel('y/(m)','FontName','宋体')
+else
+    xlabel('俯仰角/(\circ)','FontName','宋体');ylabel('方位角/(\circ)','FontName','宋体')
+end
 set(h,'edgecolor','none','facecolor','interp');%去掉网格，平滑网络
 colorbar %添加色标
 map=jet(256);%扩展到256色，颜色条无分层
 colormap(map);
 hold on
-plot(ele_max,azi_max,'g*')
-text(ele_max,azi_max,['  ele=',num2str(ele_max),newline,'  azi=',num2str(azi_max),newline],'Color','g');
+% plot(ele_max,azi_max,'g*')
+% text(ele_max,azi_max,['  ele=',num2str(ele_max),newline,'  azi=',num2str(azi_max),newline],'Color','g');
 % title('螺旋阵波束形成单声源4000Hz','FontName','黑体')
 titlestring=strcat('螺旋阵单声源',num2str(FMAIN),'Hz');
 title(titlestring,'fontname','黑体','FontSize',12);
@@ -122,15 +152,15 @@ ax.LineWidth=0.5;%设置网格线宽为0.5磅
 ax.XAxis.LineWidth=1;%设置x坐标轴线宽为1磅
 ax.YAxis.LineWidth=1;%设置y坐标轴线宽为1磅
 
-figure%三维图
-mesh(P,'FaceColor','interp');%3D figure
-xlabel('俯仰角/(\circ)','FontName','宋体');ylabel('方位角/(\circ)','FontName','宋体');zlabel('幅值/dB','FontName','宋体');
-colorbar %添加色标
-map=jet(256);%扩展到256色，颜色条无分层
-colormap(map);
-titlestring=strcat('螺旋阵单声源',num2str(FMAIN),'Hz');
-title(titlestring,'fontname','黑体','FontSize',12);
-ax=gca;
-ax.LineWidth=0.5;%设置网格线宽为0.5磅
-ax.XAxis.LineWidth=1;%设置x坐标轴线宽为1磅
-ax.YAxis.LineWidth=1;%设置y坐标轴线宽为1磅
+% figure%三维图
+% mesh(P,'FaceColor','interp');%3D figure
+% xlabel('俯仰角/(\circ)','FontName','宋体');ylabel('方位角/(\circ)','FontName','宋体');zlabel('幅值/dB','FontName','宋体');
+% colorbar %添加色标
+% map=jet(256);%扩展到256色，颜色条无分层
+% colormap(map);
+% titlestring=strcat('螺旋阵单声源',num2str(FMAIN),'Hz');
+% title(titlestring,'fontname','黑体','FontSize',12);
+% ax=gca;
+% ax.LineWidth=0.5;%设置网格线宽为0.5磅
+% ax.XAxis.LineWidth=1;%设置x坐标轴线宽为1磅
+% ax.YAxis.LineWidth=1;%设置y坐标轴线宽为1磅
