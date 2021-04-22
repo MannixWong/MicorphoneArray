@@ -1,7 +1,7 @@
 
 clear;close all;clc
 M=36;
-filen='C:\Users\MannixWong\Desktop\data\20210414_11_14_15.dat';
+filen='C:\Users\MannixWong\Desktop\data\20210421_10_09_40.dat';
 height=1000000;
 fid=fopen(filen,'r');%读出
 img=fread(fid,[M,height],'uint16');%将数据读到1*40000的数组中，指定源数据为uint16类
@@ -19,8 +19,8 @@ for i =1:m
         end
     end
 end
-Startpoint=3000;
-Sample=1000;
+Startpoint=5000;
+Sample=2048;
 x=1:1:Sample;
 for i=1:M
 y(i,:)=img(i ,Startpoint:Startpoint+Sample-1);
@@ -30,9 +30,9 @@ end
 
 %% 相关性分析
 % DESCRIPTIVE TEXT
-[a,b]=xcorr(y(1,:),y(16,:),'coeff');
+[a,b]=xcorr(y(1,:),y(36,:),'coeff');
 figure
-plot(b,a)
+plot((b+(Sample-1))/Fs,a)
 
 
 figure
@@ -47,7 +47,7 @@ ax.XAxis.LineWidth=1;%设置x坐标轴线宽为1磅
 ax.YAxis.LineWidth=1;%设置y坐标轴线宽为1磅
 X=y;
 for i=1:M-1
-delay(i)=finddelay(X(1,:),X(i+1,:))
+delay(i)=finddelay(X(1,:),X(i+1,:))/Fs
 end
 string=strcat('E',num2str(M));
 save(string,'X')
