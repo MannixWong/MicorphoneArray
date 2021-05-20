@@ -1,5 +1,6 @@
 function P=DOAalogrithm(X,Alogrithm)
-global N M FMAIN C Array_X Array_Y
+global N M FMAIN C Array_X Array_Y Array_Z Central_X Central_Y Central_Z
+global gridX gridY gridZ
 switch(Alogrithm)
     case 1
         disp('定位算法:beamforming')
@@ -7,23 +8,16 @@ switch(Alogrithm)
         for i=1:M%去除对角线影响
             R(i,i)=0;
         end
-        A=zeros(M,1);
-        thetac=zeros(1,360);
-        phic=zeros(1,90);
-        P_CB=zeros(360,90);
-        for azi=1:1:360
-            for ele=1:1:90
-                thetac(azi)=azi-1;
-                phic(ele)=ele-1;
-                for m=1:M
-                    A(m,1)=exp(-1i*2*pi*FMAIN/C*(Array_X(m)*cos(thetac(azi)*pi/180)*cos(phic(ele)*pi/180)+Array_Y(m)*sin(thetac(azi)*pi/180)*cos(phic(ele)*pi/180)));%螺旋阵弧度测试
-%                     A(m,1)=exp(-1i*2*pi*FMAIN/C*(Array_X(m)*cosd(thetac(azi))*cosd(phic(ele))+Array_Y(m)*sind(thetac(azi))*cosd(phic(ele))));%螺旋阵弧度测试
-                end
-                P_CB(azi,ele)=A'*R*A;%the power of beamforming
+        P_CB=zeros(length(gridY),length(gridX));
+        for i=1:length(gridY)
+            for j=1:length(gridX)
+                Ri = sqrt((gridX(j)-Array_X).^2+(gridY(i)-Array_Y).^2+(gridZ-Array_Z).^2);% 该扫描点到各阵元的聚焦距离矢量
+                Ri2 = sqrt((gridX(j)-Central_X).^2+(gridY(i)-Central_Y).^2+(gridZ-Central_Z).^2);% 扫描点到参考阵元的程差矢量
+                Rn = Ri-Ri2;
+                A = exp(-1i*2*pi*FMAIN*Rn/C); % 声压聚焦方向矢量
+                P_CB(i,j) = abs(A'*R*A); % CSM
             end
         end
-        P_CB=abs(P_CB);
-        
         P=P_CB;
     case 2
         disp('定位算法:MUSIC')
@@ -31,22 +25,17 @@ switch(Alogrithm)
         [EV,D]=eig(R);% [V,D]=eig(A)：求矩阵A的全部特征值，构成对角阵D，并求A的特征向量构成V的列向量
         %EV 特征向量8*8=64个
         %D  特征值构成对角矩阵  M个
-        [EV,I]=sort(diag(D).');   %特征值按升序排列
+        [EVA,I]=sort(diag(D).');   %特征值按升序排列
         EV=fliplr(EV(:,I));        %左右翻转，特征值按降序排列
         Un=EV(:,2:end);          %噪声子空间
-        A=zeros(M,1);
-        thetac=zeros(1,360);
-        phic=zeros(1,90);
-        P_MUSIC=zeros(360,90);
-        for azi=1:1:360
-            for ele=1:1:90
-                thetac(azi)=azi-1;
-                phic(ele)=ele-1;
-                for m=1:M
-                    A(m,1)=exp(-1i*2*pi*FMAIN/C*(Array_X(m)*cos(thetac(azi)*pi/180)*cos(phic(ele)*pi/180)+Array_Y(m)*sin(thetac(azi)*pi/180)*cos(phic(ele)*pi/180)));%螺旋阵弧度测试
-                    %A(m,1)=exp(-1i*2*pi*1/lambda*(Array_X(m)*cosd(thetac(azi))*cosd(phic(ele))+Array_Y(m)*sind(thetac(azi))*cosd(phic(ele))));%螺旋阵弧度测试
-                end
-                P_MUSIC(azi,ele)=A'*R*A;%the power of beamforming
+        P_MUSIC=zeros(length(gridY),length(gridX));
+        for i=1:length(gridY)
+            for j=1:length(gridX)
+                Ri = sqrt((gridX(j)-Array_X).^2+(gridY(i)-Array_Y).^2+(gridZ-Array_Z).^2);% 该扫描点到各阵元的聚焦距离矢量
+                Ri2 = sqrt((gridX(j)-Central_X).^2+(gridY(i)-Central_Y).^2+(gridZ-Central_Z).^2);% 扫描点到各阵元与参考阵元的程差矢量
+                Rn = Ri-Ri2;
+                A = exp(-1i*2*pi*FMAIN*Rn/C); % 声压聚焦方向矢量
+                P_MUSIC(i,j) = abs((A'*A)/(A'*(Un*Un')*A)); % CSM
             end
         end
         P_MUSIC=abs(P_MUSIC);
@@ -59,33 +48,27 @@ switch(Alogrithm)
         % for i=1:M%去除对角线影响
         %     R(i,i)=0;
         % end
-        A=zeros(M,1);
-        thetac=zeros(1,360);
-        phic=zeros(1,90);
-        P_FB=zeros(360,90);
-        for azi=1:1:360
-            for ele=1:1:90
-                thetac(azi)=azi-1;
-                phic(ele)=ele-1;
-                for m=1:M
-                    A(m,1)=exp(-1i*2*pi*FMAIN/C*(Array_X(m)*cos(thetac(azi)*pi/180)*cos(phic(ele)*pi/180)+Array_Y(m)*sin(thetac(azi)*pi/180)*cos(phic(ele)*pi/180)));%螺旋阵弧度测试
-                end
-                P_FB(azi,ele)=(A'*R*A)^v;%the power of beamforming
-                
+        P_FB=zeros(length(gridY),length(gridX));
+        for i=1:length(gridY)
+            for j=1:length(gridX)
+                Ri = sqrt((gridX(j)-Array_X).^2+(gridY(i)-Array_Y).^2+(gridZ-Array_Z).^2);% 该扫描点到各阵元的聚焦距离矢量
+                Ri2 = sqrt((gridX(j)-Central_X).^2+(gridY(i)-Central_Y).^2+(gridZ-Central_Z).^2);% 扫描点到参考阵元的程差矢量
+                Rn = Ri-Ri2;
+                A = exp(-1i*2*pi*FMAIN*Rn/C); % 声压聚焦方向矢量
+                P_FB(i,j) = abs(A'*R*A)^v; % CSM
             end
         end
-        P_FB=abs(P_FB);
         P=P_FB;
     case 4
         xmin=-3;xmax=3;ymin=-3;ymax=3;%检测平面大小
         increment=0.05;
-        z=4;
+        gridZ=4;
         xsteps=(abs(xmax-xmin)+increment)/increment;
         ysteps=(abs(ymax-ymin)+increment)/increment;
         xsteps=int16(xsteps)
         ysteps=int16(ysteps)
         [U,V]=meshgrid(xmin:increment:xmax,ymin:increment:ymax);
-        W=ones(xsteps,ysteps)*z;%这个可以当作检测平面各点距阵列平面的距离
+        W=ones(xsteps,ysteps)*gridZ;%这个可以当作检测平面各点距阵列平面的距离
         Scanrc=sqrt(U.^2+V.^2+W.^2);
         % mesh(U,V,Scanrc);%这个是各坐标点距中心点的距离
         eletest_r=asin(W./Scanrc);
@@ -113,7 +96,6 @@ switch(Alogrithm)
         end
         P_SP=abs(P_SP);
         P=P_SP;
-        [x_max,y_max]=find(P==max(P(:)));
-%         disp(['预测方位角: ',num2str(azitest_d(x_max,y_max)),'°','预测俯仰角: ',num2str(eletest_d(x_max,y_max)),'°'])
+        
 end
 end
